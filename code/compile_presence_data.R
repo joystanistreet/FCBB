@@ -100,11 +100,6 @@ daily_presence_baleen <- baleen_data  %>%
 # path to input data
 metadata_folder <- here('data', 'metadata')
 
-# load stations table and filter
-stations <- read_csv(here(metadata_folder, 'station_summary.csv')) %>% 
-  filter(Revision == 1) %>% 
-  mutate(station = Code)
-
 # load missing data and expand missing dates for each deployment
 missing_data <- read_csv(here(metadata_folder, 'missing_dates.csv')) %>% 
   group_by(deployment) %>% 
@@ -160,6 +155,16 @@ effort <- depl_summary %>%
 # combine baleen and beaked whale results
 all_presence <- bind_rows(daily_presence_baleen, daily_presence_beaked)
 
+# species list
+sp_sci <- c("Bm","Bp","Mn","Ba","Eg","Bb","Zc","Ha","Mb","MmMe")
+
+# species names
+sp_names <- c("Blue", "Fin", "Humpback", "Minke", "North Atlantic right", "Sei", 
+              "Goose-beaked", "Northern bottlenose", "Sowerby's", "True's*")
+
+# named vector
+names(sp_sci) <- sp_names
+
 # combine effort and presence data to create full dataset
 all_data <- effort %>% 
   full_join(all_presence, by = c('deployment', 'species', 'rec_date')) %>% 
@@ -168,13 +173,20 @@ all_data <- effort %>%
                               .default = presence)) %>% 
   
   # add station column and re-organize
-  transmute(station = as_factor(str_extract(deployment, '[^-]+')),
+  transmute(station = factor(str_extract(deployment, '[^-]+'), 
+                                levels = c('EFC','FCH','FCM', 'FCD','GBK','CCU','COC')),
             deployment = as_factor(deployment),
             group,
             species,
             rec_date,
             rec_effort,
-            presence)
+            presence) %>% 
+  
+  # add species names
+  mutate(species = factor(species, sp_sci)) %>% 
+  
+  # rename factor levels
+  mutate(species = fct_recode(species, !!!sp_sci))
 
 # save as RDS for use in other scripts
 saveRDS(all_data, here('data', 'processed', 'presence_results.RDS'))
