@@ -1,28 +1,20 @@
 
 #--------------------------------------
 
-# Script name: station_map.R
+# Script name: station_map_fcbb.R
 
-# Purpose: Create map of PAM stations based on stations table exported from DMApps database
+# Purpose: Create map of stations for FCBB PAM report
 
 # Author: Joy Stanistreet
 
-# Date created: 2023-03-24
+# Date created: 2025-02-13
 
 #--------------------------------------
 
-# REQUIRED: SET PARAMETERS
 
 # specify filename for output map (.png)
-mapfile = "FCBB.png"
+mapfile = "study_area.png"
 
-# select stations to include on map? (TRUE/FALSE)
-select_stations = TRUE
-
-# if TRUE, specify selected stations
-station_list = c('CCU', 'COC', 'EFC', 'FCD', 'FCH', 'FCM', 'GBK')
-
-#--------------------------------------
 
 # Load packages
 
@@ -31,6 +23,9 @@ library(here)
 library(sf)
 library(mapdata)
 library(ggspatial)
+library(ggnewscale)
+library(terra)
+library(tidyterra)
 
 #--------------------------------------
 
@@ -50,28 +45,41 @@ north_america <- read_sf(here(shapefiles, 'coastline', 'north_america','north_am
 fcbb <- read_sf(here(shapefiles, 'ProtectedAreas', 'DFO','FundianAOI_OLD','FundianChannel_BrownsBank_AOI_poly.shp')) %>%
    st_transform(crs = 4326)
 
-# nbw_ch <- read_sf(here(shapefiles, 'SAR_CH', 'NBW_CH','NorthernBottlenoseWhale_CH.shp')) %>%
-#   st_transform(crs = 4326)
-
-# webca <- read_sf(here(shapefiles, 'ProtectedAreas', 'DFO', 'WEBCA','WEBCA_10k_85k.shp')) %>%
-#   st_transform(crs = 4326)
+ccgb <- read_sf(here(shapefiles, 'ProtectedAreas', 'DFO', 'MarineRefuge_SSBOF', 'MarineRefuge_SSBOF.shp')) %>% 
+  st_transform(crs = 4326) %>% 
+  filter(NAME_E == 'Corsair and Georges Canyons Conservation Area, Restricted Bottom Fisheries Zone')
 
 # path to PAM metadata folder
 metadata <- here('data', 'metadata')
 
 # load station table
-stations <- read_csv(here(metadata, 'station_summary.csv')) %>%
+stations <- read_csv(here(metadata, 'fcbb_station_summary.csv')) %>%
   transmute(station = Code,
             latitude = Latitude,
             longitude = Longitude)
 
-# select stations, if needed
-if(select_stations == TRUE){
+### create hillshade layer
 
-  stations <- stations %>%
-    filter(station %in% station_list)
+# convert bathymetry to raster
+bf_rast <- rast(bf)
 
-}
+# estimate the slope
+sl <- terrain(bf_rast, 'slope', unit = 'radians')
+
+# estimate the aspect or orientation
+asp <- terrain(bf_rast, "aspect", unit = "radians")
+
+# calculate the hillshade effect with 45º of elevation
+hill_single <- shade(sl, asp,
+                     angle = 45,
+                     direction = 300,
+                     normalize = TRUE)
+
+# convert the hillshade raster to xyz
+hilldf_single <- as.data.frame(hill_single, xy = TRUE)
+
+# save as RDS for use in other maps
+saveRDS(hilldf_single, here('data','processed','hillshade_bathy.RDS'))
 
 #--------------------------------------
 
@@ -80,47 +88,94 @@ if(select_stations == TRUE){
 theme_set(theme_bw())
 
 pam_map <-ggplot() +
+  
+  geom_raster(data = hilldf_single,
+    aes(x, y, fill = hillshade),
+    show.legend = FALSE) +
+  
+  scale_fill_distiller(palette = "Blues") +
+  new_scale_fill() +
 
-  # add bathymetry
-  geom_raster(data = bf %>%
-                filter(z>-5500) %>%
-                filter(z<100),
-              aes(x = x, y = y, fill = z)) +
+  geom_raster(data = bf %>% 
+                mutate(z = if_else(z>0, 0, z)),
+              aes(x = x, y = y, fill = z),
+              alpha = 0.90) +
 
-  scale_fill_distiller(palette = 'Blues',
-                       guide = 'none',
-                       limits = c(-5000, 0)) +
+  scale_fill_hypso_tint_c(palette = 'arctic_bathy',
+                          breaks = c(0,-500,-1000,-1500,-2000,-2500,-3000,-3500,-4000,-5000),
+                          limits = c(-5500, 0)) +
 
   # add land region
   geom_sf(data = north_america,
-          color = NA, fill = "grey60") +
+          color = NA, fill = "grey50") +
 
-  # add contours (200m, 500m)
-  geom_contour(data = bf,
-               aes(x = x, y = y, z = z),
-               breaks = c(-200,-500),
-               linewidth = 0.3,
-               colour = "grey80") +
-
-  # add contours (1000m, 2000m, 3000m, 4000m, 5000m)
-  geom_contour(data = bf,
-               aes(x = x, y = y, z = z),
-               breaks = c(-1000,-2000,-3000,-4000,-5000),
-               linewidth = 0.3,
-               colour = "grey70") +
+  # # add contours (200m, 500m)
+  # geom_contour(data = bf,
+  #              aes(x = x, y = y, z = z),
+  #              breaks = c(-200, -500),
+  #              linewidth = 0.3,
+  #              colour = alpha("grey80", 0.5)) +
+  # 
+  # # add contours (1000m, 2000m, 3000m, 4000m, 5000m)
+  # geom_contour(data = bf,
+  #              aes(x = x, y = y, z = z),
+  #              breaks = c(-1000,-2000,-3000,-4000,-5000),
+  #              linewidth = 0.3,
+  #              colour = alpha("grey60", 0.4)) +
 
   # add conservation areas
   geom_sf(data = fcbb,
-          color = "darkblue",
-          fill = "darkblue",
-          alpha = 0.3) +
+          color = alpha('red', 0.4),
+          fill = 'red',
+          alpha = 0.2) +
+
+  geom_sf(data = ccgb,
+          color = alpha('orange', 0.4),
+          fill = 'orange',
+          alpha = 0.2) +
 
   # add recording sites
   geom_point(data = stations, aes(x = longitude, y = latitude),
-             colour = "black", shape = 16, size = 2) +
-
+             fill = "black", color = 'black', shape = 23, size = 1.5) +
+  
+  annotate(geom = "text", x = -67.65, y = 42.85, label = "Fundian Channel-Brown's Bank \nArea of Interest",
+            lineheight = 0.9, fontface = "italic", color = alpha('red', 0.7), size = 2.5, angle = 0, hjust = 'left') +
+  
+  annotate(geom = "text", x = -65.0, y = 40.85, label = "Corsair and Georges\nCanyons Marine Refuge",
+           lineheight = 0.9, fontface = "italic", color = alpha('orange', 0.7), size = 2.5, angle = 0, hjust = 'left') +
+  
+  annotate(geom = "text", x = -66.55, y = 41.36, label = "CCU",
+           fontface = "bold", color = 'black', size = 2, angle = 0, hjust = 'left') +
+  
+  annotate(geom = "text", x = -66.5, y = 41.25, label = "COC",
+           fontface = "bold", color = 'black', size = 2, angle = 0, hjust = 'left') +
+  
+  annotate(geom = "text", x = -66.2, y = 41.5, label = "GBK",
+           fontface = "bold", color = 'black', size = 2, angle = 0, hjust = 'left') +
+  
+  annotate(geom = "text", x = -65.3, y = 41.51, label = "FCD",
+           fontface = "bold", color = 'black', size = 2, angle = 0, hjust = 'left') +
+  
+  annotate(geom = "text", x = -65.44, y = 41.77, label = "FCM",
+           fontface = "bold", color = 'black', size = 2, angle = 0, hjust = 'left') +
+  
+  annotate(geom = "text", x = -65.25, y = 42.1, label = "FCH",
+           fontface = "bold", color = 'black', size = 2, angle = 0, hjust = 'left') +
+  
+  annotate(geom = "text", x = -64.32, y = 42.45, label = "EFC",
+           fontface = "bold", color = 'black', size = 2, angle = 0, hjust = 'left') +
+  
+  # add scale bar
+  annotation_scale(location = "bl", 
+                   width_hint = 0.25,
+                   height = unit(0.2, "cm"),
+                   line_width = 0.5,
+                   text_cex = 0.5,
+                   style = 'bar',
+                   bar_cols = c("grey35", "grey75")) +
+  
   # set map limits
-  coord_sf(xlim = c(-70, -62), ylim = c(40.5, 45), expand = FALSE) +
+  coord_sf(xlim = c(-69, -63), ylim = c(40, 45), expand = FALSE) +
 
   # format axes
   ylab("") +
@@ -128,7 +183,10 @@ pam_map <-ggplot() +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         text = element_text(size = 9),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
         legend.key = element_rect(fill = NA),
-        plot.margin = margin(0.2,0.2,0.2,0.2,"cm"))
+        legend.position = "none",
+        plot.margin = margin(0.5,0.5,0.5,0.5,"cm"))
 
-ggsave(here('figures', mapfile), pam_map, width = 6.5, height = 4.5, dpi = 600)
+ggsave(here('figures', mapfile), pam_map, width = 5.5, height = 6, dpi = 600)
