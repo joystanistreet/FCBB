@@ -49,10 +49,11 @@ daily_presence_beaked <- beaked_data  %>%
   # format deployment names
   mutate(deployment = str_replace_all(deployment, "_", "-")) %>% 
   
-  # format species and presence columns
+  # format species and presence columns, remove uncertain presence
   pivot_longer(any_of(sp_list_beaked), names_to = 'species', values_to = 'presence') %>% 
   mutate(species = factor(species)) %>% 
   mutate(presence = replace(presence, is.na(presence), 0)) %>% 
+  mutate(presence = replace(presence, presence == -1, 0)) %>% 
   
   # parse dates 
   transmute(deployment, 
@@ -158,13 +159,6 @@ all_presence <- bind_rows(daily_presence_baleen, daily_presence_beaked)
 # species list
 sp_sci <- c("Bm","Bp","Mn","Ba","Eg","Bb","Zc","Ha","Mb","MmMe")
 
-# species names
-sp_names <- c("Blue", "Fin", "Humpback", "Minke", "North Atlantic right", "Sei", 
-              "Goose-beaked", "Northern bottlenose", "Sowerby's", "True's*")
-
-# named vector
-names(sp_sci) <- sp_names
-
 # combine effort and presence data to create full dataset
 all_data <- effort %>% 
   full_join(all_presence, by = c('deployment', 'species', 'rec_date')) %>% 
@@ -182,11 +176,21 @@ all_data <- effort %>%
             rec_effort,
             presence) %>% 
   
-  # add species names
+  # order factor levels
   mutate(species = factor(species, sp_sci)) %>% 
   
-  # rename factor levels
-  mutate(species = fct_recode(species, !!!sp_sci))
+  # add variable for species names
+  mutate(species_name = factor(case_when(species == 'Bm' ~ 'Blue',
+                                            species == 'Bp' ~ 'Fin',
+                                            species == 'Mn' ~ 'Humpback',
+                                            species == 'Ba' ~ 'Minke',
+                                            species == 'Eg' ~ 'North Atlantic right',
+                                            species == 'Bb' ~ 'Sei',
+                                            species == 'Zc' ~ 'Goose-beaked',
+                                            species == 'Ha' ~ 'Northern bottlenose',
+                                            species == 'Mb' ~ "Sowerby's",
+                                            species == 'MmMe' ~ "True's")))
+
 
 # save as RDS for use in other scripts
 saveRDS(all_data, here('data', 'processed', 'presence_results.RDS'))
