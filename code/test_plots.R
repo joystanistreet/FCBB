@@ -11,7 +11,7 @@ all_data <-readRDS(here('data', 'processed', 'presence_results.RDS')) %>%
 # presence summary
 
 test <- all_data %>% 
-  group_by(deployment, group, species) %>% 
+  group_by(species) %>% 
   summarize(effortdays = sum(rec_effort),
             presdays = sum(presence, na.rm = TRUE)) %>% 
   mutate(percentdays = presdays/effortdays*100)
@@ -155,6 +155,52 @@ for (g in levels(monthly_bar$group)){
   
 }
 
+
+##### 
+# combined monthly bar plot (years pooled, sites pooled by depth category)
+
+monthly_bar <- all_data %>% 
+  mutate(month = as_factor(month(rec_date)),
+         year = as_factor(year(rec_date))) %>% 
+  mutate(depth = case_when(station == 'CCU' ~ 'shallow',
+                           station == 'FCD' ~ 'deep',
+                           .default = 'mid')) %>% 
+  group_by(depth, group, species, species_name, month) %>% 
+  summarize(p_days = sum(presence, na.rm = TRUE),
+            r_days = sum(rec_effort),
+            pc_days = p_days/r_days*100)
+
+for (g in levels(monthly_bar$group)){
+  
+  # filter by group for mapping
+  plot_sp <- monthly_bar %>% 
+    filter(group == g)
+  
+  msp <- ggplot() +
+    
+    geom_col(data = plot_sp,
+             aes(x = month, y = pc_days, fill = species_name)) +
+    
+    facet_grid(rows = vars(depth), cols = vars(species_name)) +
+    
+    scale_fill_brewer(palette = 'Dark2') +
+    
+    ylab('Percent days present') +
+    
+    theme(legend.position = 'none',
+          strip.text.x = element_text(size = 8, face = 'bold'),
+          strip.text.y = element_text(size = 8, face = 'bold'),
+          panel.grid.minor.y = element_blank(),
+          panel.grid.major.y = element_blank())
+  
+  # create output figure name
+  output_file <- paste0(g, "_monthly_presence_by_depth", Sys.Date(), ".png")
+  
+  ggsave(here('figures', output_file), msp, width = 10, height = 6, dpi = 600)
+  
+}
+
+
 #####
 # spatial comparison of overall species presence
 
@@ -208,7 +254,7 @@ tiles <- all_data %>%
   summarize(p_days = sum(presence, na.rm = TRUE),
             r_days = sum(rec_effort),
             pc_days = p_days/r_days*100) %>% 
-  filter(group == "beaked")
+  filter(group == "baleen")
 
 tileplot <- ggplot() +
   

@@ -19,6 +19,9 @@ library(here)
 library(sf)
 library(ggnewscale)
 library(RColorBrewer)
+library(terra)
+library(tidyterra)
+library(ggspatial)
 
 # load species presence results
 all_data <-readRDS(here('data', 'processed', 'presence_results.RDS')) %>% 
@@ -87,11 +90,12 @@ for (i in levels(plot_data$group)){
     
     scale_fill_hypso_tint_c(palette = 'arctic_bathy',
                             breaks = c(0,-500,-1000,-1500,-2000,-2500,-3000,-3500,-4000,-5000),
-                            limits = c(-5500, 0)) +
+                            limits = c(-5500, 0),
+                            guide = 'none') +
     
     # add land region
-    #geom_sf(data = north_america,
-    #       color = NA, fill = "grey60") +
+    geom_sf(data = north_america,
+          color = NA, fill = "grey60") +
     
     # # add contours (200m, 500m)
     # geom_contour(data = bf,
@@ -113,18 +117,31 @@ for (i in levels(plot_data$group)){
     geom_point(data = plot_group, aes(x = longitude, y = latitude, size = percentdays, fill = species_name),
                colour = "black", shape = 21, alpha = 0.75) +
     
+    scale_size('Days present (%)', 
+               limits = c(0,100),
+               guide = guide_legend(override.aes = list(fill = 'grey75'))) +
+    
     # add zero presence
     geom_point(data = plot_group %>% 
                  filter(percentdays == 0),
-               aes(x = longitude, y = latitude, fill = species_name),
-               colour = 'black', shape = 16, size = 1) +
+               aes(x = longitude, y = latitude),
+               colour = 'black', fill = 'white', shape = 21, size = 1) +
     
     facet_wrap(~species_name, ncol = 2) +
     
-    scale_fill_brewer(palette = 'Dark2') +
+    scale_fill_brewer(palette = 'Dark2', guide = 'none') +
+    
+    # add scale bar
+    # annotation_scale(location = "bl", 
+    #                  width_hint = 0.2,
+    #                  height = unit(0.2, "cm"),
+    #                  line_width = 0.5,
+    #                  text_cex = 0.5,
+    #                  style = 'bar',
+    #                  bar_cols = c("grey35", "grey75")) +
     
     # set map limits
-    coord_sf(xlim = c(-68, -63), ylim = c(40.5, 43), expand = FALSE) +
+    coord_sf(xlim = c(-68.4, -62.6), ylim = c(40.5, 43), expand = FALSE) +
     
     # format axes
     ylab("") +
@@ -132,14 +149,15 @@ for (i in levels(plot_data$group)){
     theme(panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(),
           text = element_text(size = 9),
-          legend.position = 'none',
+          #panel.spacing.x = unit(0.5, "cm"),
+          #legend.position = 'none',
           plot.margin = margin(0.2,0.2,0.2,0.2,"cm"))
   
   
   # create output figure name
   output_file <- paste0(i, "_presence_map_", Sys.Date(), ".png")
   
-  ggsave(here('figures', output_file), group_map, width = 6.5, height = 4.5, dpi = 600)
+  ggsave(here('figures', output_file), group_map, width = 6.5, height = 5, dpi = 600)
   
 }
 
