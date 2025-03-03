@@ -24,15 +24,16 @@ library(tidyterra)
 library(ggspatial)
 
 # load species presence results
-all_data <-readRDS(here('data', 'processed', 'presence_results.RDS')) %>% 
-  filter(!(deployment == 'FCM-2023-08' & group == 'baleen'))
+all_data <-readRDS(here('data', 'processed', 'presence_results.RDS'))
 
 # set up for plotting
 plot_data <- all_data %>% 
   group_by(station, group, species, species_name) %>% 
   summarize(effortdays = sum(rec_effort),
             presdays = sum(presence, na.rm = TRUE)) %>% 
-  mutate(percentdays = presdays/effortdays*100)
+  mutate(percentdays = presdays/effortdays*100) %>% 
+  mutate(pa = factor(case_when(percentdays == 0 ~ 'A',
+                               .default = 'P')))
 
 # load bathymetry & hillshade layer
 bf <- readRDS('R:/Science/CetaceanOPPNoise/CetaceanOPPNoise_2/bathymetry/baleenwhale/bathymetry.RDS')
@@ -113,23 +114,54 @@ for (i in levels(plot_data$group)){
     
     new_scale_fill() +
     
+    # # add species presence
+    # geom_point(data = plot_group, aes(x = longitude, y = latitude, size = percentdays, fill = species_name),
+    #            colour = "black", shape = 21, alpha = 0.75) +
+    
+    #  scale_fill_brewer(palette = 'Dark2', guide = 'none') +
+    
+    # #scale_shape_manual('Days present (%)', values = c(16, 21, 21, 21, 21), labels = c('0', '25','50','75','100')) +
+    # 
+    # scale_size('Days present (%)', 
+    #            limits = c(0,100),
+    #            #labels = c('0', '25','50','75','100'),
+    #            guide = guide_legend(override.aes = list(fill = 'grey75'))) +
+    # 
+    # # add zero presence
+    # geom_point(data = plot_group %>% 
+    #             filter(percentdays == 0),
+    #           aes(x = longitude, y = latitude),
+    #           colour = 'black', fill = 'white', shape = 21, size = 1) +
+    
+    
     # add species presence
-    geom_point(data = plot_group, aes(x = longitude, y = latitude, size = percentdays, fill = species_name),
-               colour = "black", shape = 21, alpha = 0.75) +
+    geom_point(data = plot_group, aes(x = longitude, 
+                                      y = latitude, 
+                                      size = percentdays, 
+                                      fill = percentdays),
+               colour = "black", 
+               shape = 21, 
+               alpha = 0.75) +
     
-    scale_size('Days present (%)', 
-               limits = c(0,100),
-               guide = guide_legend(override.aes = list(fill = 'grey75'))) +
+    scale_size(name = 'Days present (%)',
+               limits = c(0, 100),
+               breaks = c(0, 25, 50, 75, 100)) +
     
-    # add zero presence
-    geom_point(data = plot_group %>% 
-                 filter(percentdays == 0),
-               aes(x = longitude, y = latitude),
-               colour = 'black', fill = 'white', shape = 21, size = 1) +
+    scale_fill_gradientn(name = 'Days present (%)',
+                         colours = c('white', '#fed976', '#cc4c02'),
+                         values = scales::rescale(c(0, 0.0000001, 0.0000002, 50, 50.001, 100)),
+                         limits = c(0, 100),
+                         breaks = c(0, 25, 50, 75, 100),
+                         guide = 'legend') +
+                 
+    # scale_fill_distiller(name = 'Days present (%)',
+    #                      direction = 1,
+    #                      palette = 'YlOrBr',
+    #                      limits = c(0,100),
+    #                      breaks = c(0, 25, 50, 75, 100),
+    #                      guide = 'legend') +
     
     facet_wrap(~species_name, ncol = 2) +
-    
-    scale_fill_brewer(palette = 'Dark2', guide = 'none') +
     
     # add scale bar
     # annotation_scale(location = "bl", 
@@ -149,6 +181,7 @@ for (i in levels(plot_data$group)){
     theme(panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(),
           text = element_text(size = 9),
+          strip.text = element_text(face = 'bold'),
           #panel.spacing.x = unit(0.5, "cm"),
           #legend.position = 'none',
           plot.margin = margin(0.2,0.2,0.2,0.2,"cm"))
