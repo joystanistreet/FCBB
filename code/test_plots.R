@@ -5,8 +5,7 @@ library(readxl)
 library(here)
 library(RColorBrewer)
 
-all_data <-readRDS(here('data', 'processed', 'presence_results.RDS')) %>% 
-  filter(!(deployment == 'FCM-2023-08' & group == 'baleen')) 
+all_data <-readRDS(here('data', 'processed', 'presence_results.RDS'))
 
 # presence summary
 
@@ -140,18 +139,24 @@ for (g in levels(monthly_bar$group)){
     
     scale_fill_brewer(palette = 'Dark2') +
     
+    scale_x_discrete(labels = c('J','F','M','A','M','J','J','A','S','O','N','D')) +
+    
     ylab('Percent days present') +
     
+    xlab('Month') +
+    
     theme(legend.position = 'none',
-          strip.text.x = element_text(size = 8, face = 'bold'),
-          strip.text.y = element_text(size = 8, face = 'bold'),
+          strip.text.x = element_text(size = 10, face = 'bold'),
+          strip.text.y = element_text(size = 10, face = 'bold'),
+          axis.text = element_text(size = 9),
+          axis.title = element_text(size = 10),
           panel.grid.minor.y = element_blank(),
           panel.grid.major.y = element_blank())
   
   # create output figure name
   output_file <- paste0(g, "_monthly_presence_", Sys.Date(), ".png")
   
-  ggsave(here('figures', output_file), msp, width = 10, height = 6, dpi = 600)
+  ggsave(here('figures', output_file), msp, width = 10, height = 6.5, dpi = 600)
   
 }
 
