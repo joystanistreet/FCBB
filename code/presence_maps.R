@@ -70,10 +70,17 @@ for (i in levels(plot_data$group)){
   
   # filter by group for mapping
   plot_group <- plot_data %>% 
-    filter(group == i)
+    filter(group == i) %>% 
+    
+    # arrange data for mapping (so that smallest circles are plotted above larger ones)
+    group_by(species) %>% 
+    dplyr::arrange(desc(percentdays), .by_group = T) %>% 
+    ungroup()
+
+  # create map
   
   theme_set(theme_bw())
-  
+
   group_map <- ggplot() +
     
     # add bathymetry
