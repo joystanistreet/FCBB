@@ -138,44 +138,57 @@ pam_map <-ggplot() +
   geom_point(data = stations, aes(x = longitude, y = latitude),
              fill = "black", color = 'black', shape = 23, size = 1.5) +
   
-  annotate(geom = "text", x = -67.65, y = 42.85, label = "Fundian Channel-Brown's Bank \nArea of Interest",
-            lineheight = 0.9, fontface = "italic", color = alpha('red', 0.7), size = 2.5, angle = 0, hjust = 'left') +
+  # add text annotation
+  annotate(geom = "text", x = -65.4, y = 44.3, label = "Nova Scotia",
+           fontface = "italic", color = "grey75", size = 3.5) +
+  
+  annotate(geom = "text", x = -67.5, y = 43.5, label = "Gulf of Maine",
+           fontface = "italic", color = "grey35", size = 3.5) +
+  
+  annotate(geom = "text", x = -67, y = 41.9, label = "Georges Bank",
+           fontface = "italic", color = "grey35", size = 3.5) +
+  
+  annotate(geom = "text", x = -63.8, y = 43.2, label = "Scotian Shelf",
+           fontface = "italic", color = "grey35", size = 3.5) +
+  
+  annotate(geom = "text", x = -67.85, y = 42.85, label = "Fundian Channel-Brown's Bank \nArea of Interest",
+            lineheight = 0.9, fontface = "italic", color = alpha('red', 0.7), size = 4, angle = 0, hjust = 'left') +
   
   annotate(geom = "text", x = -65.0, y = 40.85, label = "Corsair and Georges\nCanyons Marine Refuge",
-           lineheight = 0.9, fontface = "italic", color = alpha('orange', 0.7), size = 2.5, angle = 0, hjust = 'left') +
+           lineheight = 0.9, fontface = "italic", color = alpha('orange', 0.7), size = 4, angle = 0, hjust = 'left') +
   
   annotate(geom = "text", x = -66.55, y = 41.36, label = "CCU",
-           fontface = "bold", color = 'black', size = 2, angle = 0, hjust = 'left') +
+           fontface = "bold", color = 'black', size = 3, angle = 0, hjust = 'left') +
   
-  annotate(geom = "text", x = -66.5, y = 41.25, label = "COC",
-           fontface = "bold", color = 'black', size = 2, angle = 0, hjust = 'left') +
+  annotate(geom = "text", x = -66.48, y = 41.25, label = "COC",
+           fontface = "bold", color = 'black', size = 3, angle = 0, hjust = 'left') +
   
   annotate(geom = "text", x = -66.2, y = 41.5, label = "GBK",
-           fontface = "bold", color = 'black', size = 2, angle = 0, hjust = 'left') +
+           fontface = "bold", color = 'black', size = 3, angle = 0, hjust = 'left') +
   
-  annotate(geom = "text", x = -65.3, y = 41.51, label = "FCD",
-           fontface = "bold", color = 'black', size = 2, angle = 0, hjust = 'left') +
+  annotate(geom = "text", x = -65.32, y = 41.51, label = "FCD",
+           fontface = "bold", color = 'black', size = 3, angle = 0, hjust = 'left') +
   
-  annotate(geom = "text", x = -65.44, y = 41.77, label = "FCM",
-           fontface = "bold", color = 'black', size = 2, angle = 0, hjust = 'left') +
+  annotate(geom = "text", x = -65.46, y = 41.77, label = "FCM",
+           fontface = "bold", color = 'black', size = 3, angle = 0, hjust = 'left') +
   
   annotate(geom = "text", x = -65.25, y = 42.1, label = "FCH",
-           fontface = "bold", color = 'black', size = 2, angle = 0, hjust = 'left') +
+           fontface = "bold", color = 'black', size = 3, angle = 0, hjust = 'left') +
   
-  annotate(geom = "text", x = -64.32, y = 42.45, label = "EFC",
-           fontface = "bold", color = 'black', size = 2, angle = 0, hjust = 'left') +
+  annotate(geom = "text", x = -64.34, y = 42.45, label = "EFC",
+           fontface = "bold", color = 'black', size = 3, angle = 0, hjust = 'left') +
   
   # add scale bar
   annotation_scale(location = "bl", 
                    width_hint = 0.25,
                    height = unit(0.2, "cm"),
                    line_width = 0.5,
-                   text_cex = 0.5,
+                   text_cex = 0.75,
                    style = 'bar',
                    bar_cols = c("grey35", "grey75")) +
   
   # set map limits
-  coord_sf(xlim = c(-69, -63), ylim = c(40, 45), expand = FALSE) +
+  coord_sf(xlim = c(-69.1, -62.9), ylim = c(40, 45), expand = FALSE) +
 
   # format axes
   ylab("") +
@@ -183,10 +196,11 @@ pam_map <-ggplot() +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         text = element_text(size = 9),
+        axis.text = element_text(size = 9),
         axis.title.x = element_blank(),
         axis.title.y = element_blank(),
         legend.key = element_rect(fill = NA),
         legend.position = "none",
         plot.margin = margin(0.5,0.5,0.5,0.5,"cm"))
 
-ggsave(here('figures', mapfile), pam_map, width = 5.5, height = 6, dpi = 600)
+ggsave(here('figures', mapfile), pam_map, width = 6.5, height = 6.5, dpi = 600)
