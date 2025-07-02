@@ -11,11 +11,6 @@
 
 #--------------------------------------
 
-
-# specify filename for output map (.png)
-mapfile = "study_area.png"
-
-
 # Load packages
 
 library(tidyverse)
@@ -45,9 +40,14 @@ north_america <- read_sf(here(shapefiles, 'coastline', 'north_america','north_am
 fcbb <- read_sf(here(shapefiles, 'ProtectedAreas', 'DFO','FundianAOI_OLD','FundianChannel_BrownsBank_AOI_poly.shp')) %>%
    st_transform(crs = 4326)
 
-ccgb <- read_sf(here(shapefiles, 'ProtectedAreas', 'DFO', 'MarineRefuge_SSBOF', 'MarineRefuge_SSBOF.shp')) %>% 
-  st_transform(crs = 4326) %>% 
+refuges <- read_sf(here(shapefiles, 'ProtectedAreas', 'DFO', 'MarineRefuge_SSBOF', 'MarineRefuge_SSBOF.shp')) %>% 
+  st_transform(crs = 4326) 
+
+ccgb <- refuges %>% 
   filter(NAME_E == 'Corsair and Georges Canyons Conservation Area, Restricted Bottom Fisheries Zone')
+
+nec <- refuges %>% 
+  filter(NAME_E == 'Northeast Channel Coral Conservation Area, Restricted Bottom Fisheries Zone')
 
 # path to PAM metadata folder
 metadata <- here('data', 'metadata')
@@ -133,6 +133,11 @@ pam_map <-ggplot() +
           color = alpha('orange', 0.4),
           fill = 'orange',
           alpha = 0.2) +
+  
+  geom_sf(data = nec,
+          color = alpha('yellow', 0.5),
+          fill = 'yellow',
+          alpha = 0.3) +
 
   # add recording sites
   geom_point(data = stations, aes(x = longitude, y = latitude),
@@ -152,10 +157,13 @@ pam_map <-ggplot() +
            fontface = "italic", color = "grey35", size = 3.5) +
   
   annotate(geom = "text", x = -67.85, y = 42.85, label = "Fundian Channel-Brown's Bank \nArea of Interest",
-            lineheight = 0.9, fontface = "italic", color = alpha('red', 0.7), size = 4, angle = 0, hjust = 'left') +
+            lineheight = 0.9, fontface = "italic", color = alpha('red', 0.7), size = 3.5, angle = 0, hjust = 'left') +
   
-  annotate(geom = "text", x = -65.0, y = 40.85, label = "Corsair and Georges\nCanyons Marine Refuge",
-           lineheight = 0.9, fontface = "italic", color = alpha('orange', 0.7), size = 4, angle = 0, hjust = 'left') +
+  annotate(geom = "text", x = -65.0, y = 40.85, label = "Corsair and Georges \nCanyons Marine Refuge",
+           lineheight = 0.9, fontface = "italic", color = alpha('orange', 0.7), size = 3.5, angle = 0, hjust = 'left') +
+  
+  annotate(geom = "text", x = -65.0, y = 41.85, label = "Northeast Channel \nCoral Conservation Area",
+           lineheight = 0.9, fontface = "italic", color = alpha('yellow', 0.7), size = 3.5, angle = 0, hjust = 'left') +
   
   annotate(geom = "text", x = -66.55, y = 41.36, label = "CCU",
            fontface = "bold", color = 'black', size = 3, angle = 0, hjust = 'left') +
@@ -202,5 +210,7 @@ pam_map <-ggplot() +
         legend.key = element_rect(fill = NA),
         legend.position = "none",
         plot.margin = margin(0.5,0.5,0.5,0.5,"cm"))
+
+mapfile<- paste0("study_area_", Sys.Date(), ".png")
 
 ggsave(here('figures', mapfile), pam_map, width = 6.5, height = 6.5, dpi = 600)
