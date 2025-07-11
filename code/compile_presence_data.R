@@ -125,12 +125,19 @@ all_species <- tibble(species = as_factor(c(levels(daily_presence_baleen$species
 effort <- depl_summary %>% 
   
   # remove deployment with no dataset
-  drop_na('In-water_start') %>% 
+  #drop_na('In-water_start') %>% 
   
   # parse dates
   transmute(deployment = Deployment,
+            depth = Depth_m,
             firstday = as_date(`In-water_start`, format = "%m/%d/%Y %H:%M")+1,
             lastday = as_date(`In-water_end`, format = "%m/%d/%Y %H:%M")-1) %>% 
+  
+  # add dates for COC-2019-10
+  mutate(firstday = case_when(deployment == 'COC-2019-10' ~ as_date('2019-10-09'),
+                              .default = firstday),
+         lastday = case_when(deployment == 'COC-2019-10' ~ as_date('2020-09-02'),
+                             .default = lastday)) %>% 
   
   # add species & groups
   merge(all_species, all = T) %>% 
@@ -147,7 +154,7 @@ effort <- depl_summary %>%
   mutate(rec_effort = coalesce(rec_effort, 1)) %>% 
   
   # drop unneeded columns
-  select(deployment, species, group, rec_date, rec_effort)
+  select(deployment, depth, species, group, rec_date, rec_effort)
 
 #--------------------------------------
 
@@ -157,7 +164,7 @@ effort <- depl_summary %>%
 all_presence <- bind_rows(daily_presence_baleen, daily_presence_beaked)
 
 # species list
-sp_sci <- c("Bm","Bp","Mn","Ba","Eg","Bb","Zc","Ha","Mb","MmMe")
+sp_sci <- c("Bm","Bp","Mn","Bb","Eg","Ba","Zc","Ha","Mb","MmMe")
 
 # combine effort and presence data to create full dataset
 all_data <- effort %>% 
@@ -170,6 +177,7 @@ all_data <- effort %>%
   transmute(station = factor(str_extract(deployment, '[^-]+'), 
                                 levels = c('EFC','FCH','FCM', 'FCD','GBK','CCU','COC')),
             deployment = as_factor(deployment),
+            depth,
             group,
             species,
             rec_date,
@@ -177,20 +185,29 @@ all_data <- effort %>%
             presence) %>% 
   
   # order factor levels
-  mutate(species = factor(species, sp_sci)) %>% 
+  mutate(species = factor(species, levels = sp_sci)) %>% 
   
   # add variable for species names
   mutate(species_name = factor(case_when(species == 'Bm' ~ 'Blue',
                                             species == 'Bp' ~ 'Fin',
                                             species == 'Mn' ~ 'Humpback',
-                                            species == 'Ba' ~ 'Minke',
-                                            species == 'Eg' ~ 'North Atlantic right',
                                             species == 'Bb' ~ 'Sei',
+                                            species == 'Eg' ~ 'North Atlantic right',
+                                            species == 'Ba' ~ 'Minke',
                                             species == 'Zc' ~ 'Goose-beaked',
                                             species == 'Ha' ~ 'Northern bottlenose',
                                             species == 'Mb' ~ "Sowerby's",
-                                            species == 'MmMe' ~ "True's")))
-
+                                            species == 'MmMe' ~ "True's"),
+                               levels = c('Blue',
+                                          'Fin',
+                                          'Humpback',
+                                          'Sei',
+                                          'North Atlantic right',
+                                          'Minke',
+                                          'Goose-beaked',
+                                          'Northern bottlenose',
+                                          "Sowerby's",
+                                          "True's")))
 
 # save as RDS for use in other scripts
 saveRDS(all_data, here('data', 'processed', 'presence_results.RDS'))

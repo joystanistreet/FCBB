@@ -71,6 +71,7 @@ for (i in levels(plot_data$group)){
   # filter by group for mapping
   plot_group <- plot_data %>% 
     filter(group == i) %>% 
+    droplevels() %>% 
     
     # arrange data for mapping (so that smallest circles are plotted above larger ones)
     group_by(species) %>% 
@@ -160,25 +161,40 @@ for (i in levels(plot_data$group)){
                          limits = c(0, 100),
                          breaks = c(0, 25, 50, 75, 100),
                          guide = 'legend') +
-                 
-    # scale_fill_distiller(name = 'Days present (%)',
-    #                      direction = 1,
-    #                      palette = 'YlOrBr',
-    #                      limits = c(0,100),
-    #                      breaks = c(0, 25, 50, 75, 100),
-    #                      guide = 'legend') +
     
     facet_wrap(~species_name, ncol = 2) +
     
-    # add scale bar
-    # annotation_scale(location = "bl", 
-    #                  width_hint = 0.2,
-    #                  height = unit(0.2, "cm"),
+    # add station labels
+    annotate(geom = "text", x = -66.95, y = 41.36, label = "CCU",
+             fontface = "bold", color = 'black', size = 2.5, angle = 0, hjust = 'left') +
+    
+    annotate(geom = "text", x = -66.88, y = 41.15, label = "COC",
+             fontface = "bold", color = 'black', size = 2.5, angle = 0, hjust = 'left') +
+    
+    annotate(geom = "text", x = -66.7, y = 41.6, label = "GBK",
+             fontface = "bold", color = 'black', size = 2.5, angle = 0, hjust = 'left') +
+    
+    annotate(geom = "text", x = -65.12, y = 41.51, label = "FCD",
+             fontface = "bold", color = 'black', size = 2.5, angle = 0, hjust = 'left') +
+    
+    annotate(geom = "text", x = -65.26, y = 41.77, label = "FCM",
+             fontface = "bold", color = 'black', size = 2.5, angle = 0, hjust = 'left') +
+    
+    annotate(geom = "text", x = -65.05, y = 42.1, label = "FCH",
+             fontface = "bold", color = 'black', size = 2.5, angle = 0, hjust = 'left') +
+    
+    annotate(geom = "text", x = -64.14, y = 42.45, label = "EFC",
+             fontface = "bold", color = 'black', size = 2.5, angle = 0, hjust = 'left') +
+    
+    # # add scale bar
+    # annotation_scale(location = "bl",
+    #                  width_hint = 0.25,
+    #                  height = unit(0.1, "cm"),
     #                  line_width = 0.5,
-    #                  text_cex = 0.5,
+    #                  text_cex = 0.6,
     #                  style = 'bar',
     #                  bar_cols = c("grey35", "grey75")) +
-    
+    # 
     # set map limits
     coord_sf(xlim = c(-68.4, -62.6), ylim = c(40.5, 43), expand = FALSE) +
     
@@ -187,17 +203,18 @@ for (i in levels(plot_data$group)){
     xlab("") +
     theme(panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(),
-          text = element_text(size = 9),
+          text = element_text(size = 10),
           strip.text = element_text(face = 'bold'),
           #panel.spacing.x = unit(0.5, "cm"),
           #legend.position = 'none',
-          plot.margin = margin(0.2,0.2,0.2,0.2,"cm"))
+          legend.box.spacing = unit(0.15, "cm"),
+          plot.margin = margin(0.1,0.1,0.1,0.1,"cm"))
   
   
   # create output figure name
   output_file <- paste0(i, "_presence_map_", Sys.Date(), ".png")
   
-  ggsave(here('figures', output_file), group_map, width = 6.5, height = 5, dpi = 600)
+  ggsave(here('figures', output_file), group_map, width = 6.5, height = 5.2, dpi = 600)
   
 }
 
